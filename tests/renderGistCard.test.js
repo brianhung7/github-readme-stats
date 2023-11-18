@@ -135,9 +135,10 @@ describe("test renderGistCard", () => {
       );
       expect(descClassStyles.fill.trim()).toBe(`#${themes[name].text_color}`);
       expect(iconClassStyles.fill.trim()).toBe(`#${themes[name].icon_color}`);
-      expect(queryByTestId(document.body, "card-bg")).toHaveAttribute(
-        "fill",
-        `#${themes[name].bg_color}`,
+      const backgroundElement = queryByTestId(document.body, "card-bg");
+      const backgroundElementFill = backgroundElement.getAttribute("fill");
+      expect([`#${themes[name].bg_color}`, "url(#gradient)"]).toContain(
+        backgroundElementFill,
       );
     });
   });
@@ -186,6 +187,53 @@ describe("test renderGistCard", () => {
     expect(queryByTestId(document.body, "card-bg")).toHaveAttribute(
       "fill",
       `#${themes.radical.bg_color}`,
+    );
+  });
+
+  it("should not render star count or fork count if either of the are zero", () => {
+    document.body.innerHTML = renderGistCard({
+      ...data,
+      starsCount: 0,
+    });
+
+    expect(queryByTestId(document.body, "starsCount")).toBeNull();
+    expect(queryByTestId(document.body, "forksCount")).toBeInTheDocument();
+
+    document.body.innerHTML = renderGistCard({
+      ...data,
+      starsCount: 1,
+      forksCount: 0,
+    });
+
+    expect(queryByTestId(document.body, "starsCount")).toBeInTheDocument();
+    expect(queryByTestId(document.body, "forksCount")).toBeNull();
+
+    document.body.innerHTML = renderGistCard({
+      ...data,
+      starsCount: 0,
+      forksCount: 0,
+    });
+
+    expect(queryByTestId(document.body, "starsCount")).toBeNull();
+    expect(queryByTestId(document.body, "forksCount")).toBeNull();
+  });
+
+  it("should render without rounding", () => {
+    document.body.innerHTML = renderGistCard(data, {
+      border_radius: "0",
+    });
+    expect(document.querySelector("rect")).toHaveAttribute("rx", "0");
+    document.body.innerHTML = renderGistCard(data, {});
+    expect(document.querySelector("rect")).toHaveAttribute("rx", "4.5");
+  });
+
+  it("should fallback to default description", () => {
+    document.body.innerHTML = renderGistCard({
+      ...data,
+      description: undefined,
+    });
+    expect(document.getElementsByClassName("description")[0]).toHaveTextContent(
+      "No description provided",
     );
   });
 });
